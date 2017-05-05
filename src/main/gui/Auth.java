@@ -172,6 +172,13 @@ public class Auth extends JDialog {
 					@Override
 					public void run() {
 						synchronized(Auth.class){
+							//Let GUI thread to show the processing box
+							try {
+								Thread.sleep(10);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+							
 							EmailClient ec = new EmailClient();
 							Auth.isSent = ec.sendEmail(to, emailmsg, "EZReports Secret key");
 							if (Auth.isSent){
@@ -186,6 +193,7 @@ public class Auth extends JDialog {
 					}
 				};
 				email.start();
+				
 				pDialog.setVisible(true);
 				
 				
@@ -321,12 +329,28 @@ public class Auth extends JDialog {
 					return;
 				}
 				
-				//send the request and check the authentication with server...
-				User user = APIHandler.getAuthenticated(Auth.this, txtUsername.getText().trim(), pass);
-				if (user!=null){
-					Auth.this.base.user = user;
-					Auth.this.dispose();
-				}
+				//handling the submitting time...
+				Processing pDialog = new Processing(Auth.this.base);
+				Thread submit = new Thread() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(10);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						
+						//send the request and check the authentication with server...
+						User user = APIHandler.getAuthenticated(Auth.this, txtUsername.getText().trim(), pass);
+						pDialog.dispose();
+						if (user!=null){
+							Auth.this.base.user = user;
+							Auth.this.dispose();
+						}
+					}
+				};
+				submit.start();
+				pDialog.setVisible(true);
 			}
 		});
 		btnSubmit.setBounds(151, 131, 98, 26);
